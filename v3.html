@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Plot</title>
+    <style>
+      .axis path,
+      .axis line{
+        fill: none;
+        stroke: #000;
+        shape-rendering: crishpEdges;
+        }    
+      .legend{
+        stroke: "grey";
+      }
+      .tick:hover{
+        fill:#aa123f;
+        font-size: 20px;
+        font-weight: bold;
+      }
+	  .circle:hover{
+	    opacity: 0.7  
+	  }
+	  .triangle:hover{
+	    opacity: 0.7  
+	  }
+      .filterDept {
+        position: absolute;
+        left:1px;
+        top: 30px;
+        font-family: Helvetica;
+        color: #444444;
+      }
+      .filterRegion {
+        position: absolute;
+        left:1px;
+        top: 30px;
+        font-family: Helvetica;
+        color: #444444;
+      }
+      .filterDeptName {
+        position: relative;
+        left: 780px;
+        bottom: 390px;
+        font-family: Helvetica;
+        color: #444444;
+      }
+      .filterRegionName {
+        position: relative;
+        left: 780px;
+        bottom: 340px;
+        font-family: Helvetica;
+        color: #444444;
+      }
+      .title {
+        position: relative;
+        left: 320px;
+        top: 10px;
+        font-family: Helvetica;
+        color: #444444;
+      }
+      path {
+        stroke-width: 2px;
+        stroke: #444444;
+        stroke-dasharray:"3, 3";
+      }
+      .d3-tip {
+        line-height: 1;
+        font-weight: bold;
+        padding: 12px;
+        background: #aaaaaa;
+        color: #aa123f;
+        border-radius: 6px;
+        font-family: Helvetica;
+      }
+      /* Creates a small triangle extender for the tooltip */
+      .d3-tip:after {
+        box-sizing: border-box;
+        display: inline;
+        font-size: 10px;
+        width: 100%;
+        line-height: 1;
+        color: #aaaaaa;
+        content: "\25BC";
+        position: absolute;
+        text-align: center;
+      }
+      /* Style northward tooltips differently */
+      .d3-tip.n:after {
+        margin: -1px 0 0 0;
+        top: 100%;
+        left: 0;
+      }
+      .triangleLegend{
+        stroke: none;
+      }
+      .grid .tick {
+        stroke: lightgrey;
+        opacity: 0.7;
+      }
+      .grid path {
+        stroke-width: 0;
+      }
+    </style>
+    <script src="http://d3js.org/d3.v3.min.js"></script>  
+    <script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+    <script src="errorbar.js"></script>
+    <script src="script.js"></script>
+  </head>
+  <body>
+    <div class = "title">
+      <h2>Graph Example</h2>
+    </div>
+    <div id="chart"></div>
+    <div id="filterDept" class = "filterDeptName">
+      <b>Department:</b>
+    </div>
+    <div id="filterRegion" class = "filterRegionName">
+      <b>Region:</b>
+    </div>
+    
+    <script>
+   
+      var CSVFileName = 'data.csv';
+      var LABEL_ALL_DEPARTMENTS = 'All Departments';
+      var LABEL_ALL_REGIONS = 'All Regions';
+      
+      var benchmarks = [
+        {'x': 4.0, 'y': 'Q1', 's': 0.2, 'name': 'B', 'dept': LABEL_ALL_DEPARTMENTS, 'region': LABEL_ALL_REGIONS},
+        {'x': 4.2, 'y': 'Q2', 's': 0.2, 'name': 'B', 'dept': LABEL_ALL_DEPARTMENTS, 'region': LABEL_ALL_REGIONS},
+        {'x': 3.9, 'y': 'Q3', 's': 0.4, 'name': 'B', 'dept': LABEL_ALL_DEPARTMENTS, 'region': LABEL_ALL_REGIONS},
+        {'x': 3.7, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': LABEL_ALL_DEPARTMENTS, 'region': LABEL_ALL_REGIONS},
+        {'x': 3.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': LABEL_ALL_DEPARTMENTS, 'region': LABEL_ALL_REGIONS},
+        {'x': 4.0, 'y': 'Q1', 's': 0.3, 'name': 'B', 'dept': LABEL_ALL_DEPARTMENTS, 'region': 'Northeast'},
+        {'x': 4.3, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': LABEL_ALL_DEPARTMENTS, 'region': 'Northeast'},
+        {'x': 4.2, 'y': 'Q3', 's': 0.2, 'name': 'B', 'dept': LABEL_ALL_DEPARTMENTS, 'region': 'Northeast'},
+        {'x': 4.3, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': LABEL_ALL_DEPARTMENTS, 'region': 'Northeast'},
+        {'x': 4.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': LABEL_ALL_DEPARTMENTS, 'region': 'Northeast'},
+        {'x': 4.0, 'y': 'Q1', 's': 0.3, 'name': 'B', 'dept': LABEL_ALL_DEPARTMENTS, 'region': 'South'},
+        {'x': 4.0, 'y': 'Q2', 's': 0.2, 'name': 'B', 'dept': LABEL_ALL_DEPARTMENTS, 'region': 'South'},
+        {'x': 3.9, 'y': 'Q3', 's': 0.2, 'name': 'B', 'dept': LABEL_ALL_DEPARTMENTS, 'region': 'South'},
+        {'x': 4.3, 'y': 'Q4', 's': 0.3, 'name': 'B', 'dept': LABEL_ALL_DEPARTMENTS, 'region': 'South'},
+        {'x': 4.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': LABEL_ALL_DEPARTMENTS, 'region': 'South'},
+        {'x': 4.0, 'y': 'Q1', 's': 0.2, 'name': 'B', 'dept': LABEL_ALL_DEPARTMENTS, 'region': 'Midwest'},
+        {'x': 4.1, 'y': 'Q2', 's': 0.1, 'name': 'B', 'dept': LABEL_ALL_DEPARTMENTS, 'region': 'Midwest'},
+        {'x': 4.5, 'y': 'Q3', 's': 0.2, 'name': 'B', 'dept': LABEL_ALL_DEPARTMENTS, 'region': 'Midwest'},
+        {'x': 4.3, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': LABEL_ALL_DEPARTMENTS, 'region': 'Midwest'},
+        {'x': 4.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': LABEL_ALL_DEPARTMENTS, 'region': 'Midwest'},
+        {'x': 3.0, 'y': 'Q1', 's': 0.3, 'name': 'B', 'dept': 'Intensive Care Unit (ICU)', 'region': LABEL_ALL_REGIONS},
+        {'x': 3.1, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': 'Intensive Care Unit (ICU)', 'region': LABEL_ALL_REGIONS},
+        {'x': 3.2, 'y': 'Q3', 's': 0.2, 'name': 'B', 'dept': 'Intensive Care Unit (ICU)', 'region': LABEL_ALL_REGIONS},
+        {'x': 3.3, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Intensive Care Unit (ICU)', 'region': LABEL_ALL_REGIONS},
+        {'x': 3.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Intensive Care Unit (ICU)', 'region': LABEL_ALL_REGIONS},
+        {'x': 4.0, 'y': 'Q1', 's': 0.5, 'name': 'B', 'dept': 'Intensive Care Unit (ICU)', 'region': 'Northeast'},
+        {'x': 4.1, 'y': 'Q2', 's': 0.1, 'name': 'B', 'dept': 'Intensive Care Unit (ICU)', 'region': 'Northeast'},
+        {'x': 4.2, 'y': 'Q3', 's': 0.2, 'name': 'B', 'dept': 'Intensive Care Unit (ICU)', 'region': 'Northeast'},
+        {'x': 4.3, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Intensive Care Unit (ICU)', 'region': 'Northeast'},
+        {'x': 4.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Intensive Care Unit (ICU)', 'region': 'Northeast'},
+        {'x': 2.0, 'y': 'Q1', 's': 0.2, 'name': 'B', 'dept': 'Intensive Care Unit (ICU)', 'region': 'South'},
+        {'x': 3.1, 'y': 'Q2', 's': 0.3, 'name': 'B', 'dept': 'Intensive Care Unit (ICU)', 'region': 'South'},
+        {'x': 3.2, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Intensive Care Unit (ICU)', 'region': 'South'},
+        {'x': 3.3, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Intensive Care Unit (ICU)', 'region': 'South'},
+        {'x': 3.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Intensive Care Unit (ICU)', 'region': 'South'},
+        {'x': 3.0, 'y': 'Q1', 's': 0.5, 'name': 'B', 'dept': 'Intensive Care Unit (ICU)', 'region': 'Midwest'},
+        {'x': 3.1, 'y': 'Q2', 's': 0.2, 'name': 'B', 'dept': 'Intensive Care Unit (ICU)', 'region': 'Midwest'},
+        {'x': 3.2, 'y': 'Q3', 's': 0.4, 'name': 'B', 'dept': 'Intensive Care Unit (ICU)', 'region': 'Midwest'},
+        {'x': 3.3, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Intensive Care Unit (ICU)', 'region': 'Midwest'},
+        {'x': 4.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Intensive Care Unit (ICU)', 'region': 'Midwest'},
+        {'x': 3.0, 'y': 'Q1', 's': 0.5, 'name': 'B', 'dept': 'Emergency Department (ED)', 'region': LABEL_ALL_REGIONS},
+        {'x': 3.1, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': 'Emergency Department (ED)', 'region': LABEL_ALL_REGIONS},
+        {'x': 3.2, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Emergency Department (ED)', 'region': LABEL_ALL_REGIONS},
+        {'x': 3.3, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Emergency Department (ED)', 'region': LABEL_ALL_REGIONS},
+        {'x': 3.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Emergency Department (ED)', 'region': LABEL_ALL_REGIONS},
+        {'x': 4.0, 'y': 'Q1', 's': 0.5, 'name': 'B', 'dept': 'Emergency Department (ED)', 'region': 'Northeast'},
+        {'x': 4.0, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': 'Emergency Department (ED)', 'region': 'Northeast'},
+        {'x': 4.2, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Emergency Department (ED)', 'region': 'Northeast'},
+        {'x': 4.6, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Emergency Department (ED)', 'region': 'Northeast'},
+        {'x': 3.9, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Emergency Department (ED)', 'region': 'Northeast'},
+		{'x': 4.0, 'y': 'Q1', 's': 0.5, 'name': 'B', 'dept': 'Emergency Department (ED)', 'region': 'South'},
+        {'x': 4.1, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': 'Emergency Department (ED)', 'region': 'South'},
+        {'x': 4.2, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Emergency Department (ED)', 'region': 'South'},
+        {'x': 4.3, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Emergency Department (ED)', 'region': 'South'},
+        {'x': 4.6, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Emergency Department (ED)', 'region': 'South'},
+		{'x': 4.0, 'y': 'Q1', 's': 0.5, 'name': 'B', 'dept': 'Emergency Department (ED)', 'region': 'Midwest'},
+        {'x': 4.1, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': 'Emergency Department (ED)', 'region': 'Midwest'},
+        {'x': 4.2, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Emergency Department (ED)', 'region': 'Midwest'},
+        {'x': 4.3, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Emergency Department (ED)', 'region': 'Midwest'},
+        {'x': 4.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Emergency Department (ED)', 'region': 'Midwest'},
+		{'x': 3.0, 'y': 'Q1', 's': 0.5, 'name': 'B', 'dept': 'Operating Room', 'region': LABEL_ALL_REGIONS},
+        {'x': 3.4, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': 'Operating Room', 'region': LABEL_ALL_REGIONS},
+        {'x': 3.2, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Operating Room', 'region': LABEL_ALL_REGIONS},
+        {'x': 3.8, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Operating Room', 'region': LABEL_ALL_REGIONS},
+        {'x': 3.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Operating Room', 'region': LABEL_ALL_REGIONS},
+        {'x': 4.0, 'y': 'Q1', 's': 0.3, 'name': 'B', 'dept': 'Operating Room', 'region': 'Northeast'},
+        {'x': 4.1, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': 'Operating Room', 'region': 'Northeast'},
+        {'x': 4.8, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Operating Room', 'region': 'Northeast'},
+        {'x': 4.3, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Operating Room', 'region': 'Northeast'},
+        {'x': 4.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Operating Room', 'region': 'Northeast'},
+		{'x': 4.0, 'y': 'Q1', 's': 0.5, 'name': 'B', 'dept': 'Operating Room', 'region': 'South'},
+        {'x': 4.1, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': 'Operating Room', 'region': 'South'},
+        {'x': 4.2, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Operating Room', 'region': 'South'},
+        {'x': 4.7, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Operating Room', 'region': 'South'},
+        {'x': 4.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Operating Room', 'region': 'South'},
+		{'x': 4.0, 'y': 'Q1', 's': 0.5, 'name': 'B', 'dept': 'Operating Room', 'region': 'Midwest'},
+        {'x': 4.9, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': 'Operating Room', 'region': 'Midwest'},
+        {'x': 4.7, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Operating Room', 'region': 'Midwest'},
+        {'x': 4.3, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Operating Room', 'region': 'Midwest'},
+        {'x': 4.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Operating Room', 'region': 'Midwest'},
+        {'x': 3.0, 'y': 'Q1', 's': 0.5, 'name': 'B', 'dept': 'Medical', 'region': LABEL_ALL_REGIONS},
+        {'x': 3.4, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': 'Medical', 'region': LABEL_ALL_REGIONS},
+        {'x': 3.2, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Medical', 'region': LABEL_ALL_REGIONS},
+        {'x': 3.8, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Medical', 'region': LABEL_ALL_REGIONS},
+        {'x': 3.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Medical', 'region': LABEL_ALL_REGIONS},
+        {'x': 4.0, 'y': 'Q1', 's': 0.3, 'name': 'B', 'dept': 'Medical', 'region': 'Northeast'},
+        {'x': 4.1, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': 'Medical', 'region': 'Northeast'},
+        {'x': 4.8, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Medical', 'region': 'Northeast'},
+        {'x': 4.3, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Medical', 'region': 'Northeast'},
+        {'x': 4.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Medical', 'region': 'Northeast'},
+		{'x': 4.0, 'y': 'Q1', 's': 0.5, 'name': 'B', 'dept': 'Medical', 'region': 'South'},
+        {'x': 4.1, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': 'Medical', 'region': 'South'},
+        {'x': 4.2, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Medical', 'region': 'South'},
+        {'x': 4.7, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Medical', 'region': 'South'},
+        {'x': 4.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Medical', 'region': 'South'},
+		{'x': 3.0, 'y': 'Q1', 's': 0.5, 'name': 'B', 'dept': 'Neonatal ICU (NICU)', 'region': LABEL_ALL_REGIONS},
+        {'x': 3.4, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': 'Neonatal ICU (NICU)', 'region': LABEL_ALL_REGIONS},
+        {'x': 3.2, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Neonatal ICU (NICU)', 'region': LABEL_ALL_REGIONS},
+        {'x': 3.8, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Neonatal ICU (NICU)', 'region': LABEL_ALL_REGIONS},
+        {'x': 3.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Neonatal ICU (NICU)', 'region': LABEL_ALL_REGIONS},
+        {'x': 4.0, 'y': 'Q1', 's': 0.3, 'name': 'B', 'dept': 'Neonatal ICU (NICU)', 'region': 'Northeast'},
+        {'x': 4.1, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': 'Neonatal ICU (NICU)', 'region': 'Northeast'},
+        {'x': 4.8, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Neonatal ICU (NICU)', 'region': 'Northeast'},
+        {'x': 4.3, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Neonatal ICU (NICU)', 'region': 'Northeast'},
+        {'x': 4.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Neonatal ICU (NICU)', 'region': 'Northeast'},
+		{'x': 4.0, 'y': 'Q1', 's': 0.5, 'name': 'B', 'dept': 'Neonatal ICU (NICU)', 'region': 'South'},
+        {'x': 4.1, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': 'Neonatal ICU (NICU)', 'region': 'South'},
+        {'x': 4.2, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Neonatal ICU (NICU)', 'region': 'South'},
+        {'x': 4.7, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Neonatal ICU (NICU)', 'region': 'South'},
+        {'x': 4.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Neonatal ICU (NICU)', 'region': 'South'},
+		{'x': 4.0, 'y': 'Q1', 's': 0.5, 'name': 'B', 'dept': 'Neonatal ICU (NICU)', 'region': 'Midwest'},
+        {'x': 4.9, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': 'Neonatal ICU (NICU)', 'region': 'Midwest'},
+        {'x': 4.7, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Neonatal ICU (NICU)', 'region': 'Midwest'},
+        {'x': 4.4, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Neonatal ICU (NICU)', 'region': 'Midwest'},
+        {'x': 4.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Neonatal ICU (NICU)', 'region': 'Midwest'},
+		{'x': 3.0, 'y': 'Q1', 's': 0.5, 'name': 'B', 'dept': 'Progressive Care Unit (PCU)', 'region': LABEL_ALL_REGIONS},
+        {'x': 3.4, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': 'Progressive Care Unit (PCU)', 'region': LABEL_ALL_REGIONS},
+        {'x': 3.2, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Progressive Care Unit (PCU)', 'region': LABEL_ALL_REGIONS},
+        {'x': 3.8, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Progressive Care Unit (PCU)', 'region': LABEL_ALL_REGIONS},
+        {'x': 3.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Progressive Care Unit (PCU)', 'region': LABEL_ALL_REGIONS},
+        {'x': 4.0, 'y': 'Q1', 's': 0.3, 'name': 'B', 'dept': 'Progressive Care Unit (PCU)', 'region': 'Northeast'},
+        {'x': 4.1, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': 'Progressive Care Unit (PCU)', 'region': 'Northeast'},
+        {'x': 4.8, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Progressive Care Unit (PCU)', 'region': 'Northeast'},
+        {'x': 4.3, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Progressive Care Unit (PCU)', 'region': 'Northeast'},
+        {'x': 4.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Progressive Care Unit (PCU)', 'region': 'Northeast'},
+		{'x': 4.0, 'y': 'Q1', 's': 0.5, 'name': 'B', 'dept': 'Progressive Care Unit (PCU)', 'region': 'South'},
+        {'x': 4.1, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': 'Progressive Care Unit (PCU)', 'region': 'South'},
+        {'x': 4.2, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Progressive Care Unit (PCU)', 'region': 'South'},
+        {'x': 4.7, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Progressive Care Unit (PCU)', 'region': 'South'},
+        {'x': 4.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Progressive Care Unit (PCU)', 'region': 'South'},
+		{'x': 4.0, 'y': 'Q1', 's': 0.5, 'name': 'B', 'dept': 'Progressive Care Unit (PCU)', 'region': 'Midwest'},
+        {'x': 4.9, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': 'Progressive Care Unit (PCU)', 'region': 'Midwest'},
+        {'x': 4.7, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Progressive Care Unit (PCU)', 'region': 'Midwest'},
+        {'x': 4.4, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Progressive Care Unit (PCU)', 'region': 'Midwest'},
+        {'x': 4.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Progressive Care Unit (PCU)', 'region': 'Midwest'},
+		{'x': 3.5, 'y': 'Q1', 's': 0.5, 'name': 'B', 'dept': 'Labor & Delivery', 'region': LABEL_ALL_REGIONS},
+        {'x': 3.7, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': 'Labor & Delivery', 'region': LABEL_ALL_REGIONS},
+        {'x': 4.2, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Labor & Delivery', 'region': LABEL_ALL_REGIONS},
+        {'x': 4.8, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Labor & Delivery', 'region': LABEL_ALL_REGIONS},
+        {'x': 3.2, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Labor & Delivery', 'region': LABEL_ALL_REGIONS},
+        {'x': 4.0, 'y': 'Q1', 's': 0.3, 'name': 'B', 'dept': 'Labor & Delivery', 'region': 'Northeast'},
+        {'x': 4.1, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': 'Labor & Delivery', 'region': 'Northeast'},
+        {'x': 4.8, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Labor & Delivery', 'region': 'Northeast'},
+        {'x': 4.5, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Labor & Delivery', 'region': 'Northeast'},
+        {'x': 4.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Labor & Delivery', 'region': 'Northeast'},
+		{'x': 4.0, 'y': 'Q1', 's': 0.5, 'name': 'B', 'dept': 'Labor & Delivery', 'region': 'South'},
+        {'x': 4.1, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': 'Labor & Delivery', 'region': 'South'},
+        {'x': 4.2, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Labor & Delivery', 'region': 'South'},
+        {'x': 4.7, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Labor & Delivery', 'region': 'South'},
+        {'x': 4.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Labor & Delivery', 'region': 'South'},
+		{'x': 4.0, 'y': 'Q1', 's': 0.5, 'name': 'B', 'dept': 'Labor & Delivery', 'region': 'Midwest'},
+        {'x': 4.9, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': 'Labor & Delivery', 'region': 'Midwest'},
+        {'x': 4.7, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Labor & Delivery', 'region': 'Midwest'},
+        {'x': 4.4, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Labor & Delivery', 'region': 'Midwest'},
+        {'x': 4.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Labor & Delivery', 'region': 'Midwest'},
+		{'x': 3.5, 'y': 'Q1', 's': 0.5, 'name': 'B', 'dept': 'Joint & Spine', 'region': LABEL_ALL_REGIONS},
+        {'x': 3.7, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': 'Joint & Spine', 'region': LABEL_ALL_REGIONS},
+        {'x': 4.2, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Joint & Spine', 'region': LABEL_ALL_REGIONS},
+        {'x': 4.8, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Joint & Spine', 'region': LABEL_ALL_REGIONS},
+        {'x': 3.2, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Joint & Spine', 'region': LABEL_ALL_REGIONS},
+        {'x': 4.0, 'y': 'Q1', 's': 0.3, 'name': 'B', 'dept': 'Joint & Spine', 'region': 'Northeast'},
+        {'x': 4.1, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': 'Joint & Spine', 'region': 'Northeast'},
+        {'x': 4.8, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Joint & Spine', 'region': 'Northeast'},
+        {'x': 4.5, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Joint & Spine', 'region': 'Northeast'},
+        {'x': 4.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Joint & Spine', 'region': 'Northeast'},
+		{'x': 4.0, 'y': 'Q1', 's': 0.5, 'name': 'B', 'dept': 'Joint & Spine', 'region': 'South'},
+        {'x': 4.1, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': 'Joint & Spine', 'region': 'South'},
+        {'x': 4.2, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Joint & Spine', 'region': 'South'},
+        {'x': 4.7, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Joint & Spine', 'region': 'South'},
+        {'x': 4.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Joint & Spine', 'region': 'South'},
+		{'x': 3.8, 'y': 'Q1', 's': 0.3, 'name': 'B', 'dept': 'Joint & Spine', 'region': 'Midwest'},
+        {'x': 4.9, 'y': 'Q2', 's': 0.2, 'name': 'B', 'dept': 'Joint & Spine', 'region': 'Midwest'},
+        {'x': 4.6, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Joint & Spine', 'region': 'Midwest'},
+        {'x': 4.4, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Joint & Spine', 'region': 'Midwest'},
+        {'x': 4.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Joint & Spine', 'region': 'Midwest'},
+		{'x': 3.5, 'y': 'Q1', 's': 0.5, 'name': 'B', 'dept': 'Surgical', 'region': LABEL_ALL_REGIONS},
+        {'x': 3.7, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': 'Surgical', 'region': LABEL_ALL_REGIONS},
+        {'x': 4.2, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Surgical', 'region': LABEL_ALL_REGIONS},
+        {'x': 4.8, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Surgical', 'region': LABEL_ALL_REGIONS},
+        {'x': 3.2, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Surgical', 'region': LABEL_ALL_REGIONS},
+        {'x': 4.0, 'y': 'Q1', 's': 0.3, 'name': 'B', 'dept': 'Surgical', 'region': 'Northeast'},
+        {'x': 4.1, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': 'Surgical', 'region': 'Northeast'},
+        {'x': 4.8, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Surgical', 'region': 'Northeast'},
+        {'x': 4.5, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Surgical', 'region': 'Northeast'},
+        {'x': 4.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Surgical', 'region': 'Northeast'},
+		{'x': 4.0, 'y': 'Q1', 's': 0.5, 'name': 'B', 'dept': 'Surgical', 'region': 'South'},
+        {'x': 4.1, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': 'Surgical', 'region': 'South'},
+        {'x': 4.2, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Surgical', 'region': 'South'},
+        {'x': 4.7, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Surgical', 'region': 'South'},
+        {'x': 4.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Surgical', 'region': 'South'},
+		{'x': 3.8, 'y': 'Q1', 's': 0.3, 'name': 'B', 'dept': 'Surgical', 'region': 'Midwest'},
+        {'x': 4.9, 'y': 'Q2', 's': 0.2, 'name': 'B', 'dept': 'Surgical', 'region': 'Midwest'},
+        {'x': 4.6, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Surgical', 'region': 'Midwest'},
+        {'x': 4.4, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Surgical', 'region': 'Midwest'},
+        {'x': 4.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Surgical', 'region': 'Midwest'},
+		{'x': 3.5, 'y': 'Q1', 's': 0.5, 'name': 'B', 'dept': 'Mother/Baby', 'region': LABEL_ALL_REGIONS},
+        {'x': 3.7, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': 'Mother/Baby', 'region': LABEL_ALL_REGIONS},
+        {'x': 4.2, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Mother/Baby', 'region': LABEL_ALL_REGIONS},
+        {'x': 4.8, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Mother/Baby', 'region': LABEL_ALL_REGIONS},
+        {'x': 3.2, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Mother/Baby', 'region': LABEL_ALL_REGIONS},
+        {'x': 4.0, 'y': 'Q1', 's': 0.3, 'name': 'B', 'dept': 'Mother/Baby', 'region': 'Northeast'},
+        {'x': 4.1, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': 'Mother/Baby', 'region': 'Northeast'},
+        {'x': 4.8, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Mother/Baby', 'region': 'Northeast'},
+        {'x': 4.5, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Mother/Baby', 'region': 'Northeast'},
+        {'x': 4.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Mother/Baby', 'region': 'Northeast'},
+		{'x': 4.2, 'y': 'Q1', 's': 0.5, 'name': 'B', 'dept': 'Mother/Baby', 'region': 'South'},
+        {'x': 4.1, 'y': 'Q2', 's': 0.5, 'name': 'B', 'dept': 'Mother/Baby', 'region': 'South'},
+        {'x': 4.2, 'y': 'Q3', 's': 0.3, 'name': 'B', 'dept': 'Mother/Baby', 'region': 'South'},
+        {'x': 4.7, 'y': 'Q4', 's': 0.1, 'name': 'B', 'dept': 'Mother/Baby', 'region': 'South'},
+        {'x': 4.4, 'y': 'Q5', 's': 0.2, 'name': 'B', 'dept': 'Mother/Baby', 'region': 'South'},
+      ];
+      
+      var questions = [
+        'I am confident activating and implementing basic medical emergency response interventions.',
+        'I feel confident coordinating the care of the patient undergoing diagnostic tests to provide safe patient care.',
+        'I am confident coordinating patient care by processing and implementing healthcare provider orders.',
+        'I am comfortable organizing hand-off communication techniques among the interprofessional team to support safe patient care.',
+        'I am confident I have the knowledge and skills to support a safe hospital environment for patient, care partners,  visitors and interprofessional team members.'
+      ];
+      
+      d3.csv(CSVFileName, function(d) {
+        //https://github.com/mbostock/d3/wiki/CSV#parse
+        var obj = {
+          'name': 'A',
+          'dept': d['Department'],
+          'region': d['Facility']
+        };
+        for (var i = 0; i < questions.length; i++) {
+          obj['Q' + (i + 1)] = +d[questions[i]];
+        };
+        return obj;
+      }, function(error, dataset) {
+        if (error) {
+          throw new Error(error);
+        };
+        allAll(dataset, benchmarks, questions, LABEL_ALL_DEPARTMENTS, LABEL_ALL_REGIONS);
+      });
+    </script>
+  </body>
+</html>
