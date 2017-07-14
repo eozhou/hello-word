@@ -1,0 +1,466 @@
+function allAll(dataset, benchmarks, questions,
+    LABEL_ALL_DEPARTMENTS, LABEL_ALL_REGIONS) {
+  var DISPLAY_HIDDEN = 'none';
+  var DISPLAY_SHOW = 'inline';
+  var svg, dropDownDept, dropDownRegion, xAxisMaxValue, yAxisDomain, loop;
+  
+  var calculateMean = function(dataArray) {
+    if (!dataArray || dataArray.length === 0) {
+      return 0;
+    };
+    var sum = 0;
+    dataArray.forEach(function(d) {
+      sum += d;
+    });
+    return sum / dataArray.length;
+  };
+  
+  var calculateSampleStandardDeviation = function(dataArray, mean) {
+    if (!dataArray || dataArray.length <= 1) {
+      return 0;
+    };
+    var sum = 0;
+    dataArray.forEach(function(d) {
+      var diff = d - mean;
+      sum += diff * diff;
+    });
+    return Math.sqrt(sum / (dataArray.length - 1));
+  };
+  
+  var calculateStandardError = function(dataArray, sampleStandardDeviation) {
+    if (!dataArray || dataArray.length === 0) {
+      return 0;
+    };
+    return sampleStandardDeviation / Math.sqrt(dataArray.length);
+  };
+  
+  var dataFormator = function (d, i) {
+    d.x = Math.round((d.x)*10)/10;
+    d.y = d.y;
+    d.s = +d.s;
+    d.s1 = Math.round((d.x - d.s) * 10) / 10;
+    d.s2 = Math.round((d.x + d.s) * 10) / 10;
+  };
+  
+  var plotChart = function(data) {
+    var make_y_axis = function() {
+      return d3.
+          svg.
+          axis().
+          scale(y).
+          orient('left').
+          ticks(5);
+    };
+    var m = {t: 30, r: 230, b: 70, l: 90},
+        w = 960 - m.l - m.r,
+        h = 500 - m.t - m.b;
+    
+    // two axes always use whole dataset
+    var x = d3.
+        scale.
+        linear().
+        range([0, w]).
+        domain([0, xAxisMaxValue]);
+    var y = d3.
+        scale.
+        ordinal().
+        rangeRoundPoints([h - 20, 0]).
+        domain(yAxisDomain);
+    
+    var xAxis = d3.
+        svg.
+        axis().
+        scale(x).
+        orient('bottom').
+        tickValues([1, 2, 3, 4, 5]);
+    var yAxis = d3.
+        svg.
+        axis().
+        scale(y).
+        orient('left').
+        ticks(3);
+    var eb = errorBar().
+        oldXScale(x).
+        xScale(x).
+        oldYScale(y).
+        yScale(y).
+        yValue(function(d) {return d.y;}).
+        xValue(function(d) {return d.x;}).
+        xError(function(d) {return d.s;}).
+        yError(function(d) {return null;});
+    var legendname = ['Your Company', 'Benchmark'];
+    var color = d3.
+        scale.
+        ordinal().
+        range(['#1778a7', '#aa123f']).
+        domain(d3.keys(data[0]).
+        filter(function(key) {return key == 'name';}));
+    var tipTriangles = d3.
+        tip().
+        attr('class', 'd3-tip').
+        offset([-10, 0]).
+        html(function(d) {
+          return '<strong style="color:#aa123f">Rating:</strong> <span style="color:#aa123f">' + d.x +
+              '</span>'+'<br/>'+
+              '<strong style="color:#aa123f">Low EST:</strong> <span style="color:#aa123f">' + d.s1 +
+              '</span style="color:#aa123f">'+'<br/>'+
+              '<strong style="color:#aa123f">High EST:</strong> <span style="color:#aa123f">' + d.s2 +
+              '</span>';
+        });
+	var tipCircles = d3.
+	    tip().
+		attr('class', 'd3-tip').
+        offset([-10, 0]).
+        html(function(d) {
+        return "<strong style = 'color:#1778a7'>Rating:</strong> <span style='color:#1778a7'>"+ d.x + 
+		"</span>"+"<br/>"+
+           "<strong style = 'color:#1778a7'>Low Est.:</strong> <span style='color:#1778a7'>" + d.s1 + 
+		   "</span>"+"<br/>"+
+           "<strong style = 'color:#1778a7'>High Est.:</strong> <span style='color:#1778a7'>" + d.s2 + 
+		   "</span>";
+        });
+    
+    // remove old chart
+    d3.select('#chart').selectAll("*").remove();
+    
+    svg = d3.
+        select('#chart').
+        append('svg').
+        attr('width', w + m.l + m.r).
+        attr('height', h + m.t + m.b);
+    
+    svg.append('g').
+        attr('class', 'grid').
+        attr('transform', 'translate(90,' + 30 + ')').
+        call(make_y_axis().tickSize(-w, 0, 0).tickFormat(''));
+    
+    var plot = svg.
+        append('g').
+        attr('transform', 'translate(' + m.l + ',' + m.t + ')');
+    
+    svg.call(tipTriangles);
+	svg.call(tipCircles);
+    
+    var triangles = plot.
+        selectAll('g').
+        data(data).
+        enter().
+        append('g').
+        attr('class', 'dot');
+    var plotErrorbar = triangles.
+        append('g').
+        attr('class', 'errorBar').
+        attr('transform', function(d) {
+          return 'translate('+ x(d.x) +','+ y(d.y) +')';
+        }).
+        call(eb);
+    var plotTriangles = triangles.
+        append('path').
+        filter(function(d) {
+          return d.name == 'B';
+        }).
+        attr('class', 'triangle').
+        attr('d', d3.svg.symbol().type('triangle-down').size(128)).
+        attr('transform', function(d) {
+          return 'translate(' + x(d.x) + ',' + y(d.y) + ')';
+        }).
+        on('mouseover', tipTriangles.show).
+        on('mouseout', tipTriangles.hide).
+        style('fill', '#aa123f').
+        style('stroke', 'none');
+    var plotCircles = triangles.
+        append('circle').
+        filter(function(d) {return d.name == 'A'}).
+        attr('class', 'circle').attr({
+          cx: function(d) {return x(d.x);},
+          cy: function(d) {return y(d.y);},
+          r: 8
+        }).
+        on('mouseover', tipCircles.show).
+        on('mouseout', tipCircles.hide).
+        style('fill', '#1778a7');
+    var legend = svg.
+        selectAll('.legend').
+        data(legendname).
+        enter().
+        append('g').
+        attr('class', 'legend').
+        attr('transform', function(d, i) {
+          return 'translate(' + (w + 150) + ',' + (30 + i * 40) + ')';
+        });
+    
+    legend.append('path').
+        filter(function(d) {return d == 'Benchmark';}).
+        attr('class', 'triangleLegend').
+        attr('d', d3.svg.symbol().type('triangle-down').size(128)).
+        style('fill', '#aa123f');
+    legend.append('circle').
+        filter(function(d) {return d == 'Your Company';}).
+        attr('class', 'circleLegend').
+        attr({
+          cx: 0,
+          cy: 0,
+          r: 8
+        }).
+        style('fill', '#1778a7');
+    legend.append('text').
+        filter(function(d) {return d == 'Benchmark'}).
+        attr('dx', 10).
+        attr('dy', '.4em').
+        text(function(d) {return d;}).
+        style('font-family', ' Helvetica').
+        style('fill', '#444444');
+    legend.append('text').
+        filter(function(d) {return d == 'Your Company'}).
+        attr('dx', 10).
+        attr('dy', '.4em').
+        text(function(d) {return d;}).
+        style('font-family', ' Helvetica').
+        style('fill', '#444444');   
+    svg.append('g').
+        attr('class', 'x axis').
+        attr('transform', 'translate('+ m.l +',' + (h + m.t) + ')').
+        style('font-family', ' Helvetica').
+        call(xAxis);
+    svg.append('g').
+        attr('class', 'y axis').
+        attr('transform', 'translate('+ m.l +','+ m.t +' )').
+        style('font-family', ' Helvetica').
+        call(yAxis);
+    svg.append("text").
+		attr("class", "x label").
+		attr("text-anchor", "end").
+		attr("x", w - 160).
+		attr("y", h + m.t + 70).
+		text("Average Response").
+		style("font-family", " Helvetica");		
+	svg.append("text").
+		attr("class", "x label").
+		attr("text-anchor", "end").
+		attr("x", w - 412).
+		attr("y", h + m.t + 35).
+		text("Strongly").
+		style("font-family", " Helvetica").
+		style("font-size","15px");	
+	svg.append("text").
+		attr("class", "x label").
+		attr("text-anchor", "end").
+		attr("x", w - 411).
+		attr("y", h + m.t + 50).
+		text("Disagree").
+		style("font-family", " Helvetica").
+		style("font-size","15px");		
+	svg.append("text").
+	    attr("class", "x label").
+		attr("text-anchor", "end").
+		attr("x", w - 170).
+		attr("y", h + m.t + 35).
+		text("Neither Disagree").
+		style("font-family", " Helvetica").
+		style("font-size","15px");				
+	svg.append("text").
+		attr("class", "x label").
+		attr("text-anchor", "end").
+		attr("x", w - 195).
+		attr("y", h + m.t + 50).
+		text("or Agree").
+		style("font-family", " Helvetica").
+		style("font-size","15px");		
+	svg.append("text").
+		attr("class", "x label").
+		attr("text-anchor", "end").
+		attr("x", w + 10).
+		attr("y", h + m.t + 35).
+		text("Neither").
+		style("font-family", " Helvetica").
+		style("font-size","15px");
+	svg.append("text").
+		attr("class", "x label").
+		attr("text-anchor", "end").
+		attr("x", w + 8).
+		attr("y", h + m.t + 50).
+		text("Agree").
+		style("font-family", " Helvetica").
+		style("font-size","15px");
+    svg.append('text').
+        attr('class', 'y label').
+        attr('text-anchor', 'end').
+        attr('x', -200).
+        attr('y', 42).
+        attr('dy', '.35em').
+        attr('transform', 'rotate(-90)').
+        text('Question').
+        style('font-family', ' Helvetica');
+    svg.select('.y.axis').
+        selectAll('.tick').
+        append('svg:title').
+        text(function(d, i) {
+          var wordsArray = questions[i].split(' ');
+          var lengthMinusOne = wordsArray.length - 1;
+          var lineBreakInsertLocation = Math.round(lengthMinusOne / 2);
+          var finalText = '';
+          for (var loopIndex = 0; loopIndex < lengthMinusOne; loopIndex++) {
+            finalText += wordsArray[loopIndex];
+            if (loopIndex === lineBreakInsertLocation) {
+              finalText += '\n';
+            } else {
+              finalText += ' ';
+            };
+          };
+          finalText += wordsArray[lengthMinusOne];
+          return finalText;
+        });
+  };
+  
+  var showRegion = function(deptValue, regionValue) {
+    var selectedData, filterFunction;
+    
+    if (deptValue === LABEL_ALL_DEPARTMENTS && 
+        regionValue === LABEL_ALL_REGIONS) {
+      selectedData = dataset;
+    } else {
+      if (deptValue === LABEL_ALL_DEPARTMENTS) {
+        filterFunction = function(d) {
+          return regionValue === d.region;
+        };
+      } else if (regionValue === LABEL_ALL_REGIONS) {
+        filterFunction = function(d) {
+          return deptValue === d.dept;
+        };
+      } else {
+        filterFunction = function(d) {
+          return (deptValue === d.dept && regionValue === d.region);
+        };
+      };
+      selectedData = dataset.filter(filterFunction);
+    };
+    var selectedDataInBenchmark = benchmarks.filter(function(d) {
+      return (deptValue === d.dept && regionValue === d.region);
+    });
+    
+    var calculatedData = [];
+    yAxisDomain.forEach(function(d) {
+      var dataArray = [];
+      for (var j = 0; j < selectedData.length; j++) {
+        if (!!selectedData[j][d]) {
+          dataArray.push(selectedData[j][d]);
+        };
+      };
+      
+      var mean = calculateMean(dataArray);
+      var ssd = calculateSampleStandardDeviation(dataArray, mean);
+      var se = calculateStandardError(dataArray, ssd);
+      
+      calculatedData.push({
+        'x': mean,
+        'y': d,
+        's': se,
+        'name': 'A',
+        'dept': deptValue,
+        'region': regionValue
+      });
+    });
+    
+    calculatedData.forEach(dataFormator);
+    plotChart(calculatedData.concat(selectedDataInBenchmark));
+  };
+  
+  var showDept = function(deptValue) {
+    // 1. sets or resets values in the dropDown for regions
+    
+    // removes all current options
+    dropDownRegion.selectAll('option').remove();
+    
+    // gets all possible region values for selected department
+    var dataInThisDept;
+    if (deptValue === LABEL_ALL_DEPARTMENTS) {
+      dataInThisDept = dataset;
+    } else {
+      dataInThisDept = dataset.filter(function(d) {
+        return d.dept === deptValue;
+      });
+    };
+    var regionSet = d3.
+        map(dataInThisDept, function(d) {return d.region;}).
+        keys();
+    
+    // sets default value in the dropDown only if there are multiple regions
+    if (regionSet.length > 1) {
+      dropDownRegion.
+          append('option').
+          property('selected', true).
+          text(LABEL_ALL_REGIONS).
+          attr('value', LABEL_ALL_REGIONS);
+    };
+    
+    // sets values in the dropDown
+    regionSet.forEach(function (d) {
+      dropDownRegion.
+          append('option').
+          text(d).
+          attr('value', d);
+    });
+    
+    // 2. set the dropDown for region to default
+    dropDownRegion.node().selectedIndex = 0;
+    
+    // 3. change display settings for all dots
+    showRegion(dropDownDept.node().value, dropDownRegion.node().value);
+  };
+  
+  // creates value domain for y axis values
+  yAxisDomain = [];
+  for (loop = 0; loop < questions.length; loop++) {
+    yAxisDomain.push('Q' + (loop + 1));
+  };
+  
+  // gets max value in x axis
+  xAxisMaxValue = 0;
+  for (loop = 0; loop < dataset.length; loop++) {
+    yAxisDomain.forEach(function(d) {
+      xAxisMaxValue = Math.max(xAxisMaxValue, dataset[loop][d]);
+    });
+  };
+  
+  // creates the dropDown for departments, and set default value
+  dropDownDept = d3.select('#filterDept').
+      append('select').
+      attr('name', 'dept-list').
+      attr('class', 'filterDept');
+  dropDownDept.
+      append('option').
+      property('selected', true).
+      text(LABEL_ALL_DEPARTMENTS).
+      attr('value', LABEL_ALL_DEPARTMENTS);
+  
+  // creates the dropDown for regions
+  // sets default value later in showDept() function
+  dropDownRegion = d3.select('#filterRegion').
+      append('select').
+      attr('name', 'region-list').
+      attr('class', 'filterRegion');
+  
+  // adds options from data array to the dropDown for departments
+  d3.map(dataset, function(d) {return d['dept'];}).
+      keys().
+      forEach(function (d) {
+        dropDownDept.
+            append('option').
+            text(d).
+            attr('value', d);
+      });
+  
+  // adds event listener to two dropDowns
+  dropDownDept.on('change', function() {
+    showDept(this.value);
+  });
+  dropDownRegion.on('change', function() {
+    showRegion(dropDownDept.node().value, this.value);
+  });
+  
+  // initializes benchmarks
+  benchmarks.forEach(dataFormator);
+  
+  // initializes chart
+  showDept(LABEL_ALL_DEPARTMENTS);
+};
